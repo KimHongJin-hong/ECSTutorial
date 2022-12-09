@@ -1,0 +1,28 @@
+entity = 컴포넌트들을 가지는 단위
+component = 데이터들을 가지는 단위
+system = 컴포넌트들을 가지고 현재 상태에서 다음 상태로 변환 시키는 로직
+
+#####Aspects#####
+https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/aspects-intro.html
+엔터티 구성 요소의 하위 집합을 단일 C# 구조체로 그룹화하는 데 사용할 수 있는 개체와 유사한 래퍼입니다.
+Aspect는 시스템에서 구성 요소 코드를 구성하고 쿼리를 단순화하는 데 유용합니다.
+예를 들어 TransformAspect구성 요소의 개별 위치, 회전 및 배율을 함께 그룹화하고 를 포함하는 쿼리에서 이러한 구성 요소에 액세스할 수 있습니다 TransformAspect. 
+인터페이스 를 사용하여 고유한 측면을 정의할 수도 있습니다 IAspect.
+
+#####Authoring#####
+게임 오브젝트 컴포넌트를 통해 베이커를 사용
+1. Entity에 컴포넌트를 추가시켜주는 용도
+
+#####Components#####
+Entity가 사용하는 데이터의 집합
+
+#####MonoBehaviours#####
+게임 오브젝트에 사용되는 컴포넌트들
+
+#####Systems######
+컴포넌트들을 가지고 현재 상태에서 다음 상태로 변환 시키는 로직
+
+
+Allocator.Temp = 함수와 메모리 수명주기가 동일 1프레임
+Allocator.TempJob = 해당 잡과 메모리 수명주기가 동일 4프레임
+Allocator.Persistent = 지속적으로 메모리가 유지 앱 수명주기와 같음
