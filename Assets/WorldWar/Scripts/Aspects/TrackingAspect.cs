@@ -7,9 +7,9 @@ public readonly partial struct TrackingAspect : IAspect
     public readonly Entity entity;
 
     private readonly TransformAspect transform;
-    private readonly RefRW<Flocking> tracking;
+    private readonly RefRW<Tracking> tracking;
 
-    public Flocking Value
+    public Tracking Value
     {
         get => tracking.ValueRO;
     }

@@ -11,6 +11,7 @@ public readonly partial struct UnitSpawnerAspect : IAspect
 
     private readonly RefRW<UnitSpawner> unitSpawner;
 
+
     public Entity UnitPrefab
     {
         get { return unitSpawner.ValueRO.unitPrefab; }
@@ -35,7 +36,7 @@ public readonly partial struct UnitSpawnerAspect : IAspect
         {
             unitSpawner.ValueRW.seed += 1;
             unitSpawner.ValueRW.random = Random.CreateFromIndex(unitSpawner.ValueRO.seed);
-            return unitSpawner.ValueRO.random.NextFloat3(new float3(-1.0f, 0, -1.0f), new float3(1.0f, 0, 1.0f)); 
+            return unitSpawner.ValueRO.random.NextFloat3(new float3(-10.0f, 0, -10.0f), new float3(10.0f, 0, 10.0f)); 
         }
     }
 

@@ -9,7 +9,7 @@ public class ConnonBallBaker : Baker<CannonBallAuthoring>
 {
     public override void Bake(CannonBallAuthoring authoring)
     {
-        AddComponent<CannonBall>();
-        AddComponent<URPMaterialPropertyBaseColor>();
+        //AddComponent<CannonBall>();
+        //AddComponent<URPMaterialPropertyBaseColor>();
     }
 }

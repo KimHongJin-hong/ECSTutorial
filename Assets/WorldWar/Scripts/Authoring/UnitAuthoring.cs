@@ -5,6 +5,7 @@ public class UnitAuthoring : MonoBehaviour
 {
     public float radius;
     public float speed;
+    public int hp;
 
     public class UnitBaker : Baker<UnitAuthoring>
     {
@@ -14,12 +15,13 @@ public class UnitAuthoring : MonoBehaviour
             //{
             //    bound = new BoundingSphere(Unity.Mathematics.float3.zero, authoring.radius)
             //});
-            AddComponent(new Flocking
+            AddComponent(new Tracking
             {
-                moveTarget = new Unity.Mathematics.float3(100, 0, 0),
+                //moveTarget = new Unity.Mathematics.float3(100, 0, 0),
                 speed = authoring.speed
             });
-            AddComponent(new Trigger());
+            AddComponent(new Push());
+            AddComponent(new OnHit());
         }
     }
 }

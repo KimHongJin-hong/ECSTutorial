@@ -1,5 +1,6 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -7,46 +8,12 @@ using Unity.Transforms;
 /// <summary>
 /// 유닛을 스폰시키는 시스템
 /// </summary>
-[WithAll(typeof(UnitSpawner))]
-[BurstCompile]
-public partial struct UnitSpawnJob : IJobEntity
-{
-    public EntityCommandBuffer entityCommandBuffer;
-    public float deltaTime;
-    public NativeList<int> spawnedEntities;
-
-    private void Execute(ref UnitSpawnerAspect unitSpawner)
-    {
-        if (spawnedEntities.Length >= unitSpawner.MaxSpawnUnit)
-        {
-            unitSpawner.Timer = 0;
-            return;
-        }
-        if (unitSpawner.SpawnTime == 0)
-        {
-            return;
-        }
-
-
-        unitSpawner.Timer += deltaTime;
-
-        if (unitSpawner.Timer >= unitSpawner.SpawnTime)
-        {
-            unitSpawner.Timer -= unitSpawner.SpawnTime;
-            var instance = entityCommandBuffer.Instantiate(unitSpawner.UnitPrefab);
-            
-            var position = unitSpawner.RandomPosition;
-            var transform = UniformScaleTransform.FromPosition(position);
-            //entityCommandBuffer.SetComponent(instance, new LocalToWorldTransform { Value = transform });
-            spawnedEntities.Add(instance.Index);
-        }
-    }
-}
 
 [BurstCompile]
 public partial struct UnitSpawningSystem : ISystem
 {
     private NativeList<int> spawnedEntities;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
@@ -73,5 +40,52 @@ public partial struct UnitSpawningSystem : ISystem
         };
 
         unitSpawnJob.Schedule();
+    }
+
+    [WithAll(typeof(UnitSpawner))]
+    [BurstCompile]
+    public partial struct UnitSpawnJob : IJobEntity
+    {
+        public EntityCommandBuffer entityCommandBuffer;
+        public float deltaTime;
+        public NativeList<int> spawnedEntities;
+
+        private void Execute(ref UnitSpawnerAspect unitSpawner)
+        {
+            if (spawnedEntities.Length >= unitSpawner.MaxSpawnUnit)
+            {
+                unitSpawner.Timer = 0;
+                return;
+            }
+            if (unitSpawner.SpawnTime == 0)
+            {
+                return;
+            }
+
+            unitSpawner.Timer += deltaTime;
+
+            if (unitSpawner.Timer >= unitSpawner.SpawnTime)
+            {
+                unitSpawner.Timer -= unitSpawner.SpawnTime;
+                var instance = entityCommandBuffer.Instantiate(unitSpawner.UnitPrefab);
+                var position = unitSpawner.RandomPosition;
+
+                //var transform = UniformScaleTransform.FromPosition(position);
+                //entityCommandBuffer.SetComponent(instance, new LocalToWorld
+                //{
+                //    //Value = float4x4.TRS(new float3(10, 0, 10), quaternion.identity, new float3(1, 1, 1))
+                //    Value = float4x4.TRS(position, quaternion.identity, new float3(1, 1, 1))
+                //});
+
+                entityCommandBuffer.SetComponent(instance, new Translation
+                {
+                    //Value = float4x4.TRS(new float3(10, 0, 10), quaternion.identity, new float3(1, 1, 1))
+                    Value = position
+                });
+
+                //entityCommandBuffer.compoent
+                spawnedEntities.Add(instance.Index);
+            }
+        }
     }
 }

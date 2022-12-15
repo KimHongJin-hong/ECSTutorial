@@ -15,28 +15,34 @@ using Unity.Transforms;
 public partial struct TriggerSystem : ISystem
 {
     private ComponentDataHandles handles;
+
     private struct ComponentDataHandles
     {
-        public ComponentLookup<PhysicsCollider> ColliderGroup;
         public TransformAspect.Lookup transformLookup;
+        public ComponentLookup<Push> pushLookup;
+        public ComponentLookup<Hit> hitLookup;
+        public ComponentLookup<OnHit> onHitLookup;
+
 
         public ComponentDataHandles(ref SystemState state)
         {
-            ColliderGroup = state.GetComponentLookup<PhysicsCollider>(true);
             transformLookup = new TransformAspect.Lookup(ref state, true);
+            pushLookup = state.GetComponentLookup<Push>();
+            hitLookup = state.GetComponentLookup<Hit>();
+            onHitLookup = state.GetComponentLookup<OnHit>();
         }
 
         public void Update(ref SystemState state)
         {
-            ColliderGroup.Update(ref state);
             transformLookup.Update(ref state);
+            pushLookup.Update(ref state);
+            hitLookup.Update(ref state);
+            onHitLookup.Update(ref state);
         }
 
     }
     public void OnCreate(ref SystemState state)
     {
-        // 시스템이 실행되려면 Trigger컴포넌트를 가진 엔티티가 하나 이상 존재해야함.
-        state.RequireForUpdate(state.GetEntityQuery(ComponentType.ReadOnly<Trigger>()));
         handles = new ComponentDataHandles(ref state);
 
     }
@@ -47,49 +53,72 @@ public partial struct TriggerSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         handles.Update(ref state);
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         state.Dependency = new TriggerJob
         {
-            ColliderGroup = handles.ColliderGroup,
             transformLookup = handles.transformLookup,
+            pushLookup = handles.pushLookup,
             deltatTime = SystemAPI.Time.DeltaTime,
+            hitLookup = handles.hitLookup,
+            onHitLookup = handles.onHitLookup,
+            commandBuffer = ecb,
         }.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
     }
 
     [BurstCompile]
     private struct TriggerJob : ITriggerEventsJob
     {
-        [ReadOnly] public ComponentLookup<PhysicsCollider> ColliderGroup;
         [NativeDisableContainerSafetyRestriction]
         [ReadOnly] public TransformAspect.Lookup transformLookup;
         public float deltatTime;
+        public ComponentLookup<Push> pushLookup;
+        public ComponentLookup<Hit> hitLookup;
+        public ComponentLookup<OnHit> onHitLookup;
         //[ReadOnly] public TransformAspect 
+        public EntityCommandBuffer commandBuffer;
 
         public void Execute(TriggerEvent triggerEvent)
         {
             var entityA = triggerEvent.EntityA;
             var entityB = triggerEvent.EntityB;
 
-            var transformA = transformLookup[entityA];
-            var transformB = transformLookup[entityB];
-            //ColliderGroup[entityA].MassProperties.Volume;
-
-            float aVolume = ColliderGroup[entityA].MassProperties.Volume;
-            float bVolume = ColliderGroup[entityB].MassProperties.Volume;
-            float sumVolume = aVolume + bVolume;
-
-            float3 positionDiff = transformA.Position - transformB.Position;
-            float distance = math.lengthsq(positionDiff);
-
-            if (distance == 0)
+            // 둘다 push를 가지고 있을 때 서로 밀 수 있게.
+            if (pushLookup.HasComponent(entityA) && pushLookup.HasComponent(entityB))
             {
-                positionDiff = new float3(1, 0, 0);
+                var transformA = transformLookup[entityA];
+                var transformB = transformLookup[entityB];
+
+                float3 positionDiff = transformA.Position - transformB.Position;
+                float distance = math.lengthsq(positionDiff);
+
+                if (distance == 0)
+                {
+                    positionDiff = new float3(1, 0, 0);
+                }
+
+                float power = 5;
+                float3 result = math.normalize(positionDiff) * power * deltatTime;
+                result.y = 0;
+                transformLookup[entityA].TranslateLocal(result);
+                transformLookup[entityB].TranslateLocal(-result);
             }
 
-            float power = 5;
-            float3 result = math.normalize(positionDiff) * power * deltatTime;
-            result.y = 0;
-            transformLookup[entityA].TranslateLocal(result);
-            transformLookup[entityB].TranslateLocal(-result);
+            bool hasHitA = hitLookup.HasComponent(entityA);
+            bool hasHitB = hitLookup.HasComponent(entityB);
+            bool hasOnHitA = onHitLookup.HasComponent(entityA);
+            bool hasOnHitB = onHitLookup.HasComponent(entityB);
+
+            if (hasHitA && hasOnHitB)
+            {
+                commandBuffer.DestroyEntity(entityA);
+                commandBuffer.DestroyEntity(entityB);
+            }
+            if (hasHitB && hasOnHitA)
+            {
+                commandBuffer.DestroyEntity(entityA);
+                commandBuffer.DestroyEntity(entityB);
+            }
         }
     }
 }
